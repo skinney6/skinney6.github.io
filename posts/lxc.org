@@ -1,0 +1,116 @@
+#+BEGIN_COMMENT
+.. title: LXC
+.. slug: lxc
+.. date: 2017-12-28 14:40:50 UTC-08:00
+.. tags: 
+.. category: 
+.. link: 
+.. description: 
+.. type: text
+#+END_COMMENT
+
+* Installation: [[http://insights.ubuntu.com/2016/03/16/lxd-2-0-installing-and-configuring-lxd-212/][lxd blog on installation]]
+* Configuration
+** Network
+*** New bridge where host and containers on the same subnet
+**** Create a new bridge on the host and enslave the hosts primary nic to it.
+**** Edit ~/etc/network/interfaces~. Comment out the primary nic block and add...
+#+BEGIN_SRC bash
+auto br0
+iface br0 inet dhcp
+   bridge_ports <nic>
+   bridge_stp off
+   bridge_fd 0
+   bridge_maxwait 0
+#+END_SRC
+**** Reboot
+**** Add a profile and use the new bridge (br0) instead of lxdbr0
+**** Or edit the default profile to use br0
+**** Containers will now join the lan the host is on, get ip via dhcp and dns resolution (if enabled).
+*** lxdbr0 on it's own subnet with NAT
+**** Assign ipv4 address
+**** Edit ~/etc/default/lxd-bridge~, see the comments for address, subnet mask and dhcp ranges etc.
+**** Restart the lxd-bridge (and dnsmasq)
+#+BEGIN_SRC bash
+/usr/lib/lxd/lxd-bridge restart
+#+END_SRC
+**** local dns resolution with dnsmasq
+**** Copy the lxc dnsmasq conf
+#+BEGIN_SRC bash
+cp /etc/dnsmasq.d-available/lxc /etc/dnsmasq.d-available/lxd
+#+END_SRC
+**** In ~/etc/dnsmasq.d-available/lxd~
+***** change the bridge from ~lxcbr0~ to ~lxdbr0~:
+***** Add ~strict-order~
+***** Symlink
+#+BEGIN_SRC bash
+ln -s /etc/dnsmasq.d-available/lxd /etc/dnsmasq.d/lxd
+#+END_SRC
+**** Add ~nameserver <lxdbr0 ip>~ as the first entry in ~/etc/resolv.conf~
+**** Restart the lxd-bridge (and dnsmasq)
+#+BEGIN_SRC bash
+/usr/lib/lxd/lxd-bridge restart
+#+END_SRC
+* SSH access to a container
+** Launch a container from an official ubuntu image
+#+BEGIN_SRC bash
+lxc launch ubuntu:xenial xenial1
+#+end_src
+** Create a key pair
+#+BEGIN_SRC bash
+ssh-keygen -t rsa -b 2048 -C lxchost_container_key -f ~/.ssh/lxc_host_container_key
+#+END_SRC
+** Copy the public key to the container so we can ssh into said container
+#+begin_src bash
+lxc file push lxc_host_container_key.pub <container name>/home/ubuntu/.ssh/authorized_keys
+#+end_src
+** Change ownership of the authorized_keys file
+#+BEGIN_SRC bash
+lxc exec <container name> "chown ubuntu: /home/ubuntu/.ssh/authorized_keys"
+#+END_SRC
+** SSH into the container
+#+BEGIN_SRC bash
+ssh ubuntu@xenial1 -i lxc_host_container_key
+#+END_SRC
+* Some common commands
+** Launch an container from an official ubuntu image
+#+BEGIN_SRC bash
+lxc launch ubuntu:trusty <container name>
+#+end_src
+** Get a bash prompt in the container
+#+BEGIN_SRC bash
+lxc exec <container name> bash
+#+end_src
+** Mount a host directory in the container (absolute paths)
+#+BEGIN_SRC bash
+lxc config device add <container name> mount1 disk source=/home/scott/xenial1_mount/ path=mount1
+#+END_SRC
+** Create an alias for an image
+*** Get the image fingerprint
+#+BEGIN_SRC bash
+lxc image list
+#+end_src
+*** Create the alias
+#+BEGIN_SRC bash
+lxc image alias create xenial 4c4c60a6b75
+#+END_SRC
+** Snapshots
+*** Snapshot a container
+#+BEGIN_SRC bash
+lxc snapshot <container name> <snapshot name>
+#+END_SRC
+*** Restore a container to a snapshot 
+#+BEGIN_SRC bash
+lxc restore <container name> <snapshot name>
+#+END_SRC
+** Cloning and renaming
+*** Copy a container
+#+BEGIN_SRC bash
+lxc copy <src container name> <dest container name>
+#+END_SRC
+* Create virtual network from scratch (might need this to run lxd on Arch) 
+** Create the ~lxdbr0~ software bridge
+#+BEGIN_SRC bash
+ip li add lxdbr0 type bridge
+#+end_src
+* Configuration documentation [[https://github.com/lxc/lxd/blob/master/doc/configuration.md][here]] 
