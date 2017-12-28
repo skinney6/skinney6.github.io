@@ -1,0 +1,44 @@
+#+BEGIN_COMMENT
+.. title: Mesos
+.. slug: mesos
+.. date: 2017-12-28 15:27:12 UTC-08:00
+.. tags: 
+.. category: 
+.. link: 
+.. description: 
+.. type: text
+#+END_COMMENT
+
+* Mesos slave bootstrap process
+** create new ami that has a set-hostname.py script instead of the route53 one
+** create iam role
+*** query for running ec2 instances
+*** read tags
+*** create tags
+** launch the instance from run_instance.py
+*** tags
+**** EXEC_ENV: the environment (dev, prod, etc)
+**** FUNCTION: the app / component name
+** instance boot procedure
+*** ec2-tags script will run
+*** set-hostname will run
+*** config template script will run (collectd, rsyslog etc)
+*** prep ansible rule (git pull on /opt/platform-mgmt repo)
+*** deploy last: this will launch, configure mesos slave
+* Java
+* HAproxy
+* Zookeeper
+** port: 2181 
+* Mesos
+** mesos-master
+*** configuration: [[https://open.mesosphere.com/reference/mesos-slave/][mesosphere reference]]
+*** dashboard port: 5050
+** mesos-slave
+*** configuration: [[https://open.mesosphere.com/reference/mesos-slave/][mesosphere reference]]
+* Marathon
+** dashboard port: 8080
+** marathon configuration: [[https://mesosphere.github.io/marathon/docs/command-line-flags.html][marathon command line flags]]
+* Consul
+** web ui port: 8500
+* Chronos
+** Run in a container on mesos slaves
