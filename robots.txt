@@ -1,0 +1,4 @@
+Sitemap: http://skinney6.github.io/sitemapindex.xml
+
+User-Agent: *
+Host: skinney6.github.io

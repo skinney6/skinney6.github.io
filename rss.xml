@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet type="text/xsl" href="assets/xml/rss.xsl" media="all"?><rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>DevOps Brain Dump</title><link>http://skinney6.github.io/</link><description>DevOps Stuff</description><atom:link href="http://skinney6.github.io/rss.xml" rel="self" type="application/rss+xml"></atom:link><language>en</language><copyright>Contents © 2017 &lt;a href="mailto:skinney6@gmail.com"&gt;Scott Kinney&lt;/a&gt; </copyright><lastBuildDate>Thu, 28 Dec 2017 22:41:17 GMT</lastBuildDate><generator>Nikola (getnikola.com)</generator><docs>http://blogs.law.harvard.edu/tech/rss</docs><item><title>LXC</title><link>http://skinney6.github.io/posts/lxc/</link><dc:creator>Scott Kinney</dc:creator><description>&lt;div id="outline-container-sec-1" class="outline-2"&gt;
+&lt;h2 id="sec-1"&gt;Installation: &lt;a href="http://insights.ubuntu.com/2016/03/16/lxd-2-0-installing-and-configuring-lxd-212/"&gt;lxd blog on installation&lt;/a&gt;&lt;/h2&gt;
+&lt;/div&gt;
+&lt;div id="outline-container-sec-2" class="outline-2"&gt;
+&lt;h2 id="sec-2"&gt;Configuration&lt;/h2&gt;
+&lt;div class="outline-text-2" id="text-2"&gt;
+&lt;/div&gt;&lt;div id="outline-container-sec-2-1" class="outline-3"&gt;
+&lt;h3 id="sec-2-1"&gt;Network&lt;/h3&gt;
+&lt;div class="outline-text-3" id="text-2-1"&gt;
+&lt;/div&gt;&lt;div id="outline-container-sec-2-1-1" class="outline-4"&gt;
+&lt;h4 id="sec-2-1-1"&gt;New bridge where host and containers on the same subnet&lt;/h4&gt;
+&lt;div class="outline-text-4" id="text-2-1-1"&gt;
+&lt;/div&gt;&lt;ul class="org-ul"&gt;&lt;li&gt;&lt;a id="sec-2-1-1-1" name="sec-2-1-1-1"&gt;&lt;/a&gt;Create a new bridge on the host and enslave the hosts primary nic to it.&lt;br&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a id="sec-2-1-1-2" name="sec-2-1-1-2"&gt;&lt;/a&gt;Edit &lt;code&gt;/etc/network/interfaces&lt;/code&gt;. Comment out the primary nic block and add…&lt;br&gt;&lt;div class="outline-text-5" id="text-2-1-1-2"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;auto br0
+iface br0 inet dhcp
+   bridge_ports &amp;lt;nic&amp;gt;
+   bridge_stp off
+   bridge_fd 0
+   bridge_maxwait 0
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a id="sec-2-1-1-3" name="sec-2-1-1-3"&gt;&lt;/a&gt;Reboot&lt;br&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a id="sec-2-1-1-4" name="sec-2-1-1-4"&gt;&lt;/a&gt;Add a profile and use the new bridge (br0) instead of lxdbr0&lt;br&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a id="sec-2-1-1-5" name="sec-2-1-1-5"&gt;&lt;/a&gt;Or edit the default profile to use br0&lt;br&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a id="sec-2-1-1-6" name="sec-2-1-1-6"&gt;&lt;/a&gt;Containers will now join the lan the host is on, get ip via dhcp and dns resolution (if enabled).&lt;br&gt;&lt;/li&gt;&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div id="outline-container-sec-2-1-2" class="outline-4"&gt;
+&lt;h4 id="sec-2-1-2"&gt;lxdbr0 on it's own subnet with NAT&lt;/h4&gt;
+&lt;div class="outline-text-4" id="text-2-1-2"&gt;
+&lt;/div&gt;&lt;ul class="org-ul"&gt;&lt;li&gt;&lt;a id="sec-2-1-2-1" name="sec-2-1-2-1"&gt;&lt;/a&gt;Assign ipv4 address&lt;br&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a id="sec-2-1-2-2" name="sec-2-1-2-2"&gt;&lt;/a&gt;Edit &lt;code&gt;/etc/default/lxd-bridge&lt;/code&gt;, see the comments for address, subnet mask and dhcp ranges etc.&lt;br&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a id="sec-2-1-2-3" name="sec-2-1-2-3"&gt;&lt;/a&gt;Restart the lxd-bridge (and dnsmasq)&lt;br&gt;&lt;div class="outline-text-5" id="text-2-1-2-3"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;/usr/lib/lxd/lxd-bridge restart
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a id="sec-2-1-2-4" name="sec-2-1-2-4"&gt;&lt;/a&gt;local dns resolution with dnsmasq&lt;br&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a id="sec-2-1-2-5" name="sec-2-1-2-5"&gt;&lt;/a&gt;Copy the lxc dnsmasq conf&lt;br&gt;&lt;div class="outline-text-5" id="text-2-1-2-5"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;cp /etc/dnsmasq.d-available/lxc /etc/dnsmasq.d-available/lxd
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a id="sec-2-1-2-6" name="sec-2-1-2-6"&gt;&lt;/a&gt;In &lt;code&gt;/etc/dnsmasq.d-available/lxd&lt;/code&gt;&lt;br&gt;&lt;ul class="org-ul"&gt;&lt;li&gt;&lt;a id="sec-2-1-2-6-1" name="sec-2-1-2-6-1"&gt;&lt;/a&gt;change the bridge from &lt;code&gt;lxcbr0&lt;/code&gt; to &lt;code&gt;lxdbr0&lt;/code&gt;:&lt;br&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a id="sec-2-1-2-6-2" name="sec-2-1-2-6-2"&gt;&lt;/a&gt;Add &lt;code&gt;strict-order&lt;/code&gt;&lt;br&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a id="sec-2-1-2-6-3" name="sec-2-1-2-6-3"&gt;&lt;/a&gt;Symlink&lt;br&gt;&lt;div class="outline-text-6" id="text-2-1-2-6-3"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;ln -s /etc/dnsmasq.d-available/lxd /etc/dnsmasq.d/lxd
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/li&gt;&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a id="sec-2-1-2-7" name="sec-2-1-2-7"&gt;&lt;/a&gt;Add &lt;code&gt;nameserver &amp;lt;lxdbr0 ip&amp;gt;&lt;/code&gt; as the first entry in &lt;code&gt;/etc/resolv.conf&lt;/code&gt;&lt;br&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a id="sec-2-1-2-8" name="sec-2-1-2-8"&gt;&lt;/a&gt;Restart the lxd-bridge (and dnsmasq)&lt;br&gt;&lt;div class="outline-text-5" id="text-2-1-2-8"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;/usr/lib/lxd/lxd-bridge restart
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/li&gt;&lt;/ul&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id="outline-container-sec-3" class="outline-2"&gt;
+&lt;h2 id="sec-3"&gt;SSH access to a container&lt;/h2&gt;
+&lt;div class="outline-text-2" id="text-3"&gt;
+&lt;/div&gt;&lt;div id="outline-container-sec-3-1" class="outline-3"&gt;
+&lt;h3 id="sec-3-1"&gt;Launch a container from an official ubuntu image&lt;/h3&gt;
+&lt;div class="outline-text-3" id="text-3-1"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;lxc launch ubuntu:xenial xenial1
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id="outline-container-sec-3-2" class="outline-3"&gt;
+&lt;h3 id="sec-3-2"&gt;Create a key pair&lt;/h3&gt;
+&lt;div class="outline-text-3" id="text-3-2"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;ssh-keygen -t rsa -b 2048 -C lxchost_container_key -f ~/.ssh/lxc_host_container_key
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id="outline-container-sec-3-3" class="outline-3"&gt;
+&lt;h3 id="sec-3-3"&gt;Copy the public key to the container so we can ssh into said container&lt;/h3&gt;
+&lt;div class="outline-text-3" id="text-3-3"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;lxc file push lxc_host_container_key.pub &amp;lt;container name&amp;gt;/home/ubuntu/.ssh/authorized_keys
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id="outline-container-sec-3-4" class="outline-3"&gt;
+&lt;h3 id="sec-3-4"&gt;Change ownership of the authorized&lt;sub&gt;keys&lt;/sub&gt; file&lt;/h3&gt;
+&lt;div class="outline-text-3" id="text-3-4"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;lxc exec &amp;lt;container name&amp;gt; "chown ubuntu: /home/ubuntu/.ssh/authorized_keys"
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id="outline-container-sec-3-5" class="outline-3"&gt;
+&lt;h3 id="sec-3-5"&gt;SSH into the container&lt;/h3&gt;
+&lt;div class="outline-text-3" id="text-3-5"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;ssh ubuntu@xenial1 -i lxc_host_container_key
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id="outline-container-sec-4" class="outline-2"&gt;
+&lt;h2 id="sec-4"&gt;Some common commands&lt;/h2&gt;
+&lt;div class="outline-text-2" id="text-4"&gt;
+&lt;/div&gt;&lt;div id="outline-container-sec-4-1" class="outline-3"&gt;
+&lt;h3 id="sec-4-1"&gt;Launch an container from an official ubuntu image&lt;/h3&gt;
+&lt;div class="outline-text-3" id="text-4-1"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;lxc launch ubuntu:trusty &amp;lt;container name&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id="outline-container-sec-4-2" class="outline-3"&gt;
+&lt;h3 id="sec-4-2"&gt;Get a bash prompt in the container&lt;/h3&gt;
+&lt;div class="outline-text-3" id="text-4-2"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;lxc exec &amp;lt;container name&amp;gt; bash
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id="outline-container-sec-4-3" class="outline-3"&gt;
+&lt;h3 id="sec-4-3"&gt;Mount a host directory in the container (absolute paths)&lt;/h3&gt;
+&lt;div class="outline-text-3" id="text-4-3"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;lxc config device add &amp;lt;container name&amp;gt; mount1 disk source=/home/scott/xenial1_mount/ path=mount1
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id="outline-container-sec-4-4" class="outline-3"&gt;
+&lt;h3 id="sec-4-4"&gt;Create an alias for an image&lt;/h3&gt;
+&lt;div class="outline-text-3" id="text-4-4"&gt;
+&lt;/div&gt;&lt;div id="outline-container-sec-4-4-1" class="outline-4"&gt;
+&lt;h4 id="sec-4-4-1"&gt;Get the image fingerprint&lt;/h4&gt;
+&lt;div class="outline-text-4" id="text-4-4-1"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;lxc image list
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id="outline-container-sec-4-4-2" class="outline-4"&gt;
+&lt;h4 id="sec-4-4-2"&gt;Create the alias&lt;/h4&gt;
+&lt;div class="outline-text-4" id="text-4-4-2"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;lxc image alias create xenial 4c4c60a6b75
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id="outline-container-sec-4-5" class="outline-3"&gt;
+&lt;h3 id="sec-4-5"&gt;Snapshots&lt;/h3&gt;
+&lt;div class="outline-text-3" id="text-4-5"&gt;
+&lt;/div&gt;&lt;div id="outline-container-sec-4-5-1" class="outline-4"&gt;
+&lt;h4 id="sec-4-5-1"&gt;Snapshot a container&lt;/h4&gt;
+&lt;div class="outline-text-4" id="text-4-5-1"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;lxc snapshot &amp;lt;container name&amp;gt; &amp;lt;snapshot name&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id="outline-container-sec-4-5-2" class="outline-4"&gt;
+&lt;h4 id="sec-4-5-2"&gt;Restore a container to a snapshot&lt;/h4&gt;
+&lt;div class="outline-text-4" id="text-4-5-2"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;lxc restore &amp;lt;container name&amp;gt; &amp;lt;snapshot name&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id="outline-container-sec-4-6" class="outline-3"&gt;
+&lt;h3 id="sec-4-6"&gt;Cloning and renaming&lt;/h3&gt;
+&lt;div class="outline-text-3" id="text-4-6"&gt;
+&lt;/div&gt;&lt;div id="outline-container-sec-4-6-1" class="outline-4"&gt;
+&lt;h4 id="sec-4-6-1"&gt;Copy a container&lt;/h4&gt;
+&lt;div class="outline-text-4" id="text-4-6-1"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;lxc copy &amp;lt;src container name&amp;gt; &amp;lt;dest container name&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id="outline-container-sec-5" class="outline-2"&gt;
+&lt;h2 id="sec-5"&gt;Create virtual network from scratch (might need this to run lxd on Arch)&lt;/h2&gt;
+&lt;div class="outline-text-2" id="text-5"&gt;
+&lt;/div&gt;&lt;div id="outline-container-sec-5-1" class="outline-3"&gt;
+&lt;h3 id="sec-5-1"&gt;Create the &lt;code&gt;lxdbr0&lt;/code&gt; software bridge&lt;/h3&gt;
+&lt;div class="outline-text-3" id="text-5-1"&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;ip li add lxdbr0 type bridge
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id="outline-container-sec-6" class="outline-2"&gt;
+&lt;h2 id="sec-6"&gt;Configuration documentation &lt;a href="https://github.com/lxc/lxd/blob/master/doc/configuration.md"&gt;here&lt;/a&gt;&lt;/h2&gt;
+&lt;/div&gt;</description><guid>http://skinney6.github.io/posts/lxc/</guid><pubDate>Thu, 28 Dec 2017 22:40:50 GMT</pubDate></item></channel></rss>
